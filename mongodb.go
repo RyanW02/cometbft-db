@@ -82,7 +82,7 @@ func (db *MongoDB) Get(key []byte) ([]byte, error) {
 		return nil, errKeyEmpty
 	}
 
-	res := db.collection.FindOne(context.Background(), bson.D{{"_id", key}})
+	res := db.collection.FindOne(context.Background(), bson.D{{"_id", string(key)}})
 	if res.Err() != nil {
 		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 			return nil, nil
@@ -104,7 +104,7 @@ func (db *MongoDB) Has(key []byte) (bool, error) {
 		return false, errKeyEmpty
 	}
 
-	res := db.collection.FindOne(context.Background(), bson.D{{"_id", key}})
+	res := db.collection.FindOne(context.Background(), bson.D{{"_id", string(key)}})
 	if res.Err() != nil {
 		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 			return false, nil
@@ -127,8 +127,8 @@ func (db *MongoDB) Set(key, value []byte) error {
 
 	_, err := db.collection.UpdateOne(
 		context.Background(),
-		bson.D{{"_id", key}},
-		bson.D{{"$set", newRecord(key, value)}},
+		bson.D{{"_id", string(key)}},
+		bson.D{{"$set", bson.D{{"value", value}}}},
 		&mongoOptions.UpdateOptions{Upsert: ptr(true)},
 	)
 	return err
@@ -145,7 +145,7 @@ func (db *MongoDB) Delete(key []byte) error {
 		return errKeyEmpty
 	}
 
-	_, err := db.collection.DeleteOne(context.Background(), bson.D{{"_id", key}})
+	_, err := db.collection.DeleteOne(context.Background(), bson.D{{"_id", string(key)}})
 	return err
 }
 

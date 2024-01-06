@@ -44,7 +44,7 @@ func (b *mongoDBBatch) Set(key, value []byte) error {
 
 	b.batch = append(b.batch,
 		mongo.NewUpdateOneModel().
-			SetFilter(bson.D{{"_id", key}}).
+			SetFilter(bson.D{{"_id", string(key)}}).
 			SetUpdate(bson.D{{"$set", bson.D{{"value", value}}}}).
 			SetUpsert(true),
 	)
@@ -63,7 +63,7 @@ func (b *mongoDBBatch) Delete(key []byte) error {
 		return errBatchClosed
 	}
 
-	b.batch = append(b.batch, mongo.NewDeleteOneModel().SetFilter(bson.D{{"_id", key}}))
+	b.batch = append(b.batch, mongo.NewDeleteOneModel().SetFilter(bson.D{{"_id", string(key)}}))
 	return nil
 }
 

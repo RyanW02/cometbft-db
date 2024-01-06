@@ -34,7 +34,7 @@ func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoD
 				return nil, errKeyEmpty
 			}
 
-			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$gte", start}}}})
+			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$gte", string(start)}}}})
 		}
 
 		if end != nil {
@@ -42,7 +42,7 @@ func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoD
 				return nil, errKeyEmpty
 			}
 
-			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$lt", end}}}})
+			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$lt", string(end)}}}})
 		}
 
 		filter = bson.D{{"$and", filterArray}}
