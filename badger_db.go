@@ -6,9 +6,10 @@ package db
 import (
 	"bytes"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"github.com/dgraph-io/badger/v2"
 )
@@ -16,12 +17,12 @@ import (
 func init() { registerDBCreator(BadgerDBBackend, badgerDBCreator, true) }
 
 func badgerDBCreator(options Options) (DB, error) {
-	name, ok := options.GetString(optionName)
+	name, ok := options[optionName]
 	if !ok {
 		return nil, errors.Wrap(errMissingOption, optionName)
 	}
 
-	dir, ok := options.GetString(optionDir)
+	dir, ok := options[optionDir]
 	if !ok {
 		return nil, errors.Wrap(errMissingOption, optionDir)
 	}
@@ -36,7 +37,7 @@ func NewBadgerDB(dbName, dir string) (*BadgerDB, error) {
 	// the final directory to use for the database.
 	path := filepath.Join(dir, dbName)
 
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(path, 0o755); err != nil {
 		return nil, err
 	}
 	opts := badger.DefaultOptions(path)

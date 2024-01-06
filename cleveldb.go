@@ -5,20 +5,21 @@ package db
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"github.com/jmhodges/levigo"
 )
 
 func init() {
 	dbCreator := func(options Options) (DB, error) {
-		name, ok := options.GetString(optionName)
+		name, ok := options[optionName]
 		if !ok {
 			return nil, errors.Wrap(errMissingOption, optionName)
 		}
 
-		dir, ok := options.GetString(optionDir)
+		dir, ok := options[optionDir]
 		if !ok {
 			return nil, errors.Wrap(errMissingOption, optionDir)
 		}

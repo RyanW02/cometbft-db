@@ -27,13 +27,12 @@ func newRemoteDB(gdc protodb.DBClient, err error) (*RemoteDB, error) {
 }
 
 type Init struct {
-	Dir  string
-	Name string
-	Type string
+	Type    string
+	Options map[string]string
 }
 
 func (rd *RemoteDB) InitRemote(in *Init) error {
-	_, err := rd.dc.Init(rd.ctx, &protodb.Init{Dir: in.Dir, Type: in.Type, Name: in.Name})
+	_, err := rd.dc.Init(rd.ctx, &protodb.Init{Type: in.Type, Options: in.Options})
 	return err
 }
 

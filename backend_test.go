@@ -3,14 +3,15 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/ory/dockertest/v3"
-	"github.com/stretchr/testify/suite"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/stretchr/testify/suite"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,7 +72,7 @@ func (s *BackendTestSuite) SetupSuite() {
 
 	s.T().Log("Connected to Docker, starting MongoDB container...")
 
-	mongoClient, mongoResource, err := setupMongoDb(&s.Suite, pool)
+	mongoClient, mongoResource, err := setupMongoDB(&s.Suite, pool)
 	if err != nil {
 		panic(err)
 	}

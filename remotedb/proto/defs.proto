@@ -55,8 +55,8 @@ message Stats {
 
 message Init {
   string Type = 1;
-  string Name = 2;
-  string Dir  = 3;
+  map<string, string> options = 4;
+  reserved 2, 3;
 }
 
 service DB {

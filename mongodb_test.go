@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/assert"
@@ -10,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"testing"
 )
 
 type MongoTestSuite struct {
@@ -39,7 +40,7 @@ func (s *MongoTestSuite) SetupSuite() {
 
 	s.T().Log("Connected to Docker, starting MongoDB container...")
 
-	client, resource, err := setupMongoDb(&s.Suite, pool)
+	client, resource, err := setupMongoDB(&s.Suite, pool)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +75,7 @@ func (s *MongoTestSuite) TearDownTest() {
 	}
 }
 
-func setupMongoDb(s *suite.Suite, pool *dockertest.Pool) (*mongo.Client, *dockertest.Resource, error) {
+func setupMongoDB(s *suite.Suite, pool *dockertest.Pool) (*mongo.Client, *dockertest.Resource, error) {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "mongo",
 		Tag:        "7",

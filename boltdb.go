@@ -5,25 +5,24 @@ package db
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"go.etcd.io/bbolt"
 )
 
-var (
-	bucket = []byte("tm")
-)
+var bucket = []byte("tm")
 
 func init() {
 	registerDBCreator(BoltDBBackend, func(options Options) (DB, error) {
-		name, ok := options.GetString(optionName)
+		name, ok := options[optionName]
 		if !ok {
 			return nil, errors.Wrap(errMissingOption, optionName)
 		}
 
-		dir, ok := options.GetString(optionDir)
+		dir, ok := options[optionDir]
 		if !ok {
 			return nil, errors.Wrap(errMissingOption, optionDir)
 		}

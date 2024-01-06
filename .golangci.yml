@@ -41,6 +41,7 @@ linters-settings:
           - github.com/cometbft
           - github.com/syndtr/goleveldb/leveldb
           - github.com/google/btree
+          - github.com/pkg/errors
       test:
         files:
           - $test
@@ -49,3 +50,6 @@ linters-settings:
           - github.com/cometbft
           - github.com/syndtr/goleveldb/leveldb
           - github.com/stretchr/testify
+          - github.com/ory/dockertest/v3
+          - github.com/ory/dockertest/v3/docker
+          - github.com/pkg/errors

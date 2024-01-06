@@ -2,9 +2,10 @@ package db
 
 import (
 	"context"
+	"sync"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"sync"
 )
 
 type mongoDBBatch struct {
@@ -44,8 +45,8 @@ func (b *mongoDBBatch) Set(key, value []byte) error {
 
 	b.batch = append(b.batch,
 		mongo.NewUpdateOneModel().
-			SetFilter(bson.D{{"_id", string(key)}}).
-			SetUpdate(bson.D{{"$set", bson.D{{"value", value}}}}).
+			SetFilter(bson.D{{Key: "_id", Value: string(key)}}).
+			SetUpdate(bson.D{{Key: "$set", Value: bson.D{{Key: "value", Value: value}}}}).
 			SetUpsert(true),
 	)
 	return nil
@@ -63,7 +64,7 @@ func (b *mongoDBBatch) Delete(key []byte) error {
 		return errBatchClosed
 	}
 
-	b.batch = append(b.batch, mongo.NewDeleteOneModel().SetFilter(bson.D{{"_id", string(key)}}))
+	b.batch = append(b.batch, mongo.NewDeleteOneModel().SetFilter(bson.D{{Key: "_id", Value: string(key)}}))
 	return nil
 }
 

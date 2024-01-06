@@ -63,7 +63,7 @@ func (s *server) Init(ctx context.Context, in *protodb.Init) (*protodb.Entity, e
 	defer s.mu.Unlock()
 
 	var err error
-	s.db, err = db.NewDB(in.Name, db.BackendType(in.Type), in.Dir)
+	s.db, err = db.NewDB(db.BackendType(in.Type), in.Options)
 	if err != nil {
 		return nil, err
 	}

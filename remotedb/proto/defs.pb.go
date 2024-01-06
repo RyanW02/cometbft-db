@@ -414,12 +414,11 @@ func (m *Stats) GetTimeAt() int64 {
 }
 
 type Init struct {
-	Type                 string   `protobuf:"bytes,1,opt,name=Type,proto3" json:"Type,omitempty"`
-	Name                 string   `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
-	Dir                  string   `protobuf:"bytes,3,opt,name=Dir,proto3" json:"Dir,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Type                 string            `protobuf:"bytes,1,opt,name=Type,proto3" json:"Type,omitempty"`
+	Options              map[string]string `protobuf:"bytes,4,rep,name=options,proto3" json:"options,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
 func (m *Init) Reset()         { *m = Init{} }
@@ -453,18 +452,11 @@ func (m *Init) GetType() string {
 	return ""
 }
 
-func (m *Init) GetName() string {
+func (m *Init) GetOptions() map[string]string {
 	if m != nil {
-		return m.Name
+		return m.Options
 	}
-	return ""
-}
-
-func (m *Init) GetDir() string {
-	if m != nil {
-		return m.Dir
-	}
-	return ""
+	return nil
 }
 
 func init() {
@@ -478,6 +470,7 @@ func init() {
 	proto.RegisterType((*Stats)(nil), "protodb.Stats")
 	proto.RegisterMapType((map[string]string)(nil), "protodb.Stats.DataEntry")
 	proto.RegisterType((*Init)(nil), "protodb.Init")
+	proto.RegisterMapType((map[string]string)(nil), "protodb.Init.OptionsEntry")
 }
 
 func init() { proto.RegisterFile("remotedb/proto/defs.proto", fileDescriptor_ef1eada6618d0075) }
@@ -785,11 +778,13 @@ func (this *Init) Equal(that interface{}) bool {
 	if this.Type != that1.Type {
 		return false
 	}
-	if this.Name != that1.Name {
+	if len(this.Options) != len(that1.Options) {
 		return false
 	}
-	if this.Dir != that1.Dir {
-		return false
+	for i := range this.Options {
+		if this.Options[i] != that1.Options[i] {
+			return false
+		}
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
@@ -1533,10 +1528,15 @@ func NewPopulatedStats(r randyDefs, easy bool) *Stats {
 func NewPopulatedInit(r randyDefs, easy bool) *Init {
 	this := &Init{}
 	this.Type = string(randStringDefs(r))
-	this.Name = string(randStringDefs(r))
-	this.Dir = string(randStringDefs(r))
+	if r.Intn(5) != 0 {
+		v11 := r.Intn(10)
+		this.Options = make(map[string]string)
+		for i := 0; i < v11; i++ {
+			this.Options[randStringDefs(r)] = randStringDefs(r)
+		}
+	}
 	if !easy && r.Intn(10) != 0 {
-		this.XXX_unrecognized = randUnrecognizedDefs(r, 4)
+		this.XXX_unrecognized = randUnrecognizedDefs(r, 5)
 	}
 	return this
 }

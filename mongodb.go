@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	mongoOptions "go.mongodb.org/mongo-driver/mongo/options"
@@ -12,17 +13,17 @@ import (
 func init() { registerDBCreator(MongoDBBackend, mongoDBCreator, true) }
 
 func mongoDBCreator(options Options) (DB, error) {
-	connString, ok := options.GetString("connection_string")
+	connString, ok := options["connection_string"]
 	if !ok {
 		return nil, errors.New("connection_string not provided in options")
 	}
 
-	databaseName, ok := options.GetString("database")
+	databaseName, ok := options["database"]
 	if !ok {
 		return nil, errors.New("database not provided in options")
 	}
 
-	collectionName, ok := options.GetString("collection")
+	collectionName, ok := options["collection"]
 	if !ok {
 		return nil, errors.New("collection not provided in options")
 	}
@@ -67,14 +68,6 @@ type record struct {
 	Value []byte `bson:"value"`
 }
 
-// Constructor for a record.
-func newRecord(key, value []byte) record {
-	return record{
-		Key:   key,
-		Value: value,
-	}
-}
-
 // Get fetches a value from the database by key.
 // Returns (nil, nil) if the key does not exist.
 func (db *MongoDB) Get(key []byte) ([]byte, error) {
@@ -82,7 +75,7 @@ func (db *MongoDB) Get(key []byte) ([]byte, error) {
 		return nil, errKeyEmpty
 	}
 
-	res := db.collection.FindOne(context.Background(), bson.D{{"_id", string(key)}})
+	res := db.collection.FindOne(context.Background(), bson.D{{Key: "_id", Value: string(key)}})
 	if res.Err() != nil {
 		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 			return nil, nil
@@ -104,7 +97,7 @@ func (db *MongoDB) Has(key []byte) (bool, error) {
 		return false, errKeyEmpty
 	}
 
-	res := db.collection.FindOne(context.Background(), bson.D{{"_id", string(key)}})
+	res := db.collection.FindOne(context.Background(), bson.D{{Key: "_id", Value: string(key)}})
 	if res.Err() != nil {
 		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 			return false, nil
@@ -127,8 +120,8 @@ func (db *MongoDB) Set(key, value []byte) error {
 
 	_, err := db.collection.UpdateOne(
 		context.Background(),
-		bson.D{{"_id", string(key)}},
-		bson.D{{"$set", bson.D{{"value", value}}}},
+		bson.D{{Key: "_id", Value: string(key)}},
+		bson.D{{Key: "$set", Value: bson.D{{Key: "value", Value: value}}}},
 		&mongoOptions.UpdateOptions{Upsert: ptr(true)},
 	)
 	return err
@@ -145,7 +138,7 @@ func (db *MongoDB) Delete(key []byte) error {
 		return errKeyEmpty
 	}
 
-	_, err := db.collection.DeleteOne(context.Background(), bson.D{{"_id", string(key)}})
+	_, err := db.collection.DeleteOne(context.Background(), bson.D{{Key: "_id", Value: string(key)}})
 	return err
 }
 

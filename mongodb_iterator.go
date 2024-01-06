@@ -3,10 +3,11 @@ package db
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"sync"
 )
 
 type mongoDBIterator struct {
@@ -34,7 +35,7 @@ func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoD
 				return nil, errKeyEmpty
 			}
 
-			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$gte", string(start)}}}})
+			filterArray = append(filterArray, bson.D{{Key: "_id", Value: bson.D{{Key: "$gte", Value: string(start)}}}})
 		}
 
 		if end != nil {
@@ -42,19 +43,19 @@ func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoD
 				return nil, errKeyEmpty
 			}
 
-			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$lt", string(end)}}}})
+			filterArray = append(filterArray, bson.D{{Key: "_id", Value: bson.D{{Key: "$lt", Value: string(end)}}}})
 		}
 
-		filter = bson.D{{"$and", filterArray}}
+		filter = bson.D{{Key: "$and", Value: filterArray}}
 	}
 
 	fmt.Println(filter)
 
 	var opts *options.FindOptions
 	if isReverse {
-		opts = options.Find().SetSort(bson.D{{"_id", -1}})
+		opts = options.Find().SetSort(bson.D{{Key: "_id", Value: -1}})
 	} else {
-		opts = options.Find().SetSort(bson.D{{"_id", 1}})
+		opts = options.Find().SetSort(bson.D{{Key: "_id", Value: 1}})
 	}
 
 	cursor, err := db.collection.Find(context.Background(), filter, opts)

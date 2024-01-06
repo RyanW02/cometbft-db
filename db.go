@@ -42,21 +42,7 @@ const (
 	MongoDBBackend BackendType = "mongodb"
 )
 
-type Options map[string]interface{}
-
-func (o Options) GetString(key string) (string, bool) {
-	val, ok := o[key]
-	if !ok {
-		return "", false
-	}
-
-	str, ok := val.(string)
-	if !ok {
-		return "", false
-	}
-
-	return str, true
-}
+type Options map[string]string
 
 type dbCreator func(options Options) (DB, error)
 
@@ -89,8 +75,10 @@ func NewDB(backend BackendType, options Options) (DB, error) {
 	return db, nil
 }
 
-const optionName = "name"
-const optionDir = "dir"
+const (
+	optionName = "name"
+	optionDir  = "dir"
+)
 
 var errMissingOption = errors.New("missing option")
 
