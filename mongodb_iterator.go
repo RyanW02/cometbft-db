@@ -23,12 +23,21 @@ type mongoDBIterator struct {
 var _ Iterator = (*mongoDBIterator)(nil)
 
 func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoDBIterator, error) {
-	filter := bson.D{{
-		"$and", bson.A{
-			bson.D{{"_id", bson.D{{"$gte", start}}}},
-			bson.D{{"_id", bson.D{{"$lt", end}}}},
-		},
-	}}
+	var filter bson.D
+	if start == nil && end == nil {
+		filter = bson.D{}
+	} else {
+		filterArray := bson.A{}
+		if start != nil {
+			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$gte", start}}}})
+		}
+
+		if end != nil {
+			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$lt", end}}}})
+		}
+
+		filter = bson.D{{"$and", filterArray}}
+	}
 
 	var opts *options.FindOptions
 	if isReverse {
