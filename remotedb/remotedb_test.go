@@ -29,7 +29,7 @@ func TestRemoteDB(t *testing.T) {
 	client, err := remotedb.NewRemoteDB(ln.Addr().String(), cert)
 	require.Nil(t, err, "expecting a successful client creation")
 	dbName := "test-remote-db"
-	require.Nil(t, client.InitRemote(&remotedb.Init{Type: "goleveldb", Options: map[string]string{"name": dbName}}))
+	require.Nil(t, client.InitRemote(&remotedb.Init{Type: "goleveldb", Options: map[string]string{"name": dbName, "dir": "./"}}))
 	defer os.RemoveAll(dbName + ".db")
 
 	k1 := []byte("key-1")

@@ -58,6 +58,7 @@ var _ protodb.DBServer = (*server)(nil)
 //   - fsdb
 //   - memdB
 //   - goleveldb
+//   - mongodb
 func (s *server) Init(ctx context.Context, in *protodb.Init) (*protodb.Entity, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
