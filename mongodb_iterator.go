@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -48,8 +47,6 @@ func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoD
 
 		filter = bson.D{{Key: "$and", Value: filterArray}}
 	}
-
-	fmt.Println(filter)
 
 	var opts *options.FindOptions
 	if isReverse {

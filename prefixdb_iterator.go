@@ -17,8 +17,6 @@ func IteratePrefix(db DB, prefix []byte) (Iterator, error) {
 		end = cpIncr(prefix)
 	}
 
-	fmt.Printf("start: %s, end: %s\n", string(start), string(end))
-
 	itr, err := db.Iterator(start, end)
 	if err != nil {
 		return nil, err

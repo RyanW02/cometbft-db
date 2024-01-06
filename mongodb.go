@@ -25,7 +25,12 @@ func mongoDBCreator(options Options) (DB, error) {
 
 	collectionName, ok := options["collection"]
 	if !ok {
-		return nil, errors.New("collection not provided in options")
+		// If "collection" is not provided, try to use "name" for compatibility.
+		if name, ok := options["name"]; ok {
+			collectionName = name
+		} else {
+			return nil, errors.New("collection not provided in options")
+		}
 	}
 
 	serverAPI := mongoOptions.ServerAPI(mongoOptions.ServerAPIVersion1)
