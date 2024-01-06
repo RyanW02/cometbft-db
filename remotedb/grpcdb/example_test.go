@@ -28,8 +28,10 @@ func Example() {
 	// 1. Initialize the DB
 	in := &protodb.Init{
 		Type: "leveldb",
-		Name: "grpc-uno-test",
-		Dir:  ".",
+		Options: map[string]string{
+			"dir":  ".",
+			"name": "grpc-uno-test",
+		},
 	}
 	if _, err := client.Init(ctx, in); err != nil {
 		log.Fatalf("Init error: %v", err)
