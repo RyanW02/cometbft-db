@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -41,7 +42,23 @@ const (
 	MongoDBBackend BackendType = "mongodb"
 )
 
-type dbCreator func(name string, dir string) (DB, error)
+type Options map[string]interface{}
+
+func (o Options) GetString(key string) (string, bool) {
+	val, ok := o[key]
+	if !ok {
+		return "", false
+	}
+
+	str, ok := val.(string)
+	if !ok {
+		return "", false
+	}
+
+	return str, true
+}
+
+type dbCreator func(options Options) (DB, error)
 
 var backends = map[BackendType]dbCreator{}
 
@@ -54,7 +71,7 @@ func registerDBCreator(backend BackendType, creator dbCreator, force bool) {
 }
 
 // NewDB creates a new database of type backend with the given name.
-func NewDB(name string, backend BackendType, dir string) (DB, error) {
+func NewDB(backend BackendType, options Options) (DB, error) {
 	dbCreator, ok := backends[backend]
 	if !ok {
 		keys := make([]string, 0, len(backends))
@@ -65,9 +82,24 @@ func NewDB(name string, backend BackendType, dir string) (DB, error) {
 			backend, strings.Join(keys, ","))
 	}
 
-	db, err := dbCreator(name, dir)
+	db, err := dbCreator(options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 	return db, nil
+}
+
+const optionName = "name"
+const optionDir = "dir"
+
+var errMissingOption = errors.New("missing option")
+
+// NewFlatFileDB is a shortcut for NewDB for flat-file backends.
+func NewFlatFileDB(name string, backend BackendType, dir string) (DB, error) {
+	options := Options{
+		optionName: name,
+		optionDir:  dir,
+	}
+
+	return NewDB(backend, options)
 }

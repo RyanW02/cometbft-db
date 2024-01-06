@@ -9,10 +9,10 @@ import (
 )
 
 // Empty iterator for empty db.
-func TestPrefixIteratorNoMatchNil(t *testing.T) {
+func (s *BackendTestSuite) TestPrefixIteratorNoMatchNil() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 			itr, err := IteratePrefix(db, []byte("2"))
 			require.NoError(t, err)
@@ -23,15 +23,15 @@ func TestPrefixIteratorNoMatchNil(t *testing.T) {
 }
 
 // Empty iterator for db populated after iterator created.
-func TestPrefixIteratorNoMatch1(t *testing.T) {
+func (s *BackendTestSuite) TestPrefixIteratorNoMatch1() {
 	for backend := range backends {
 		if backend == BoltDBBackend {
-			t.Log("bolt does not support concurrent writes while iterating")
+			s.T().Log("bolt does not support concurrent writes while iterating")
 			continue
 		}
 
-		t.Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 			itr, err := IteratePrefix(db, []byte("2"))
 			require.NoError(t, err)
@@ -44,10 +44,10 @@ func TestPrefixIteratorNoMatch1(t *testing.T) {
 }
 
 // Empty iterator for prefix starting after db entry.
-func TestPrefixIteratorNoMatch2(t *testing.T) {
+func (s *BackendTestSuite) TestPrefixIteratorNoMatch2() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 			err := db.SetSync(bz("3"), bz("value_3"))
 			require.NoError(t, err)
@@ -60,10 +60,10 @@ func TestPrefixIteratorNoMatch2(t *testing.T) {
 }
 
 // Iterator with single val for db with single val, starting from that val.
-func TestPrefixIteratorMatch1(t *testing.T) {
+func (s *BackendTestSuite) TestPrefixIteratorMatch1() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 			err := db.SetSync(bz("2"), bz("value_2"))
 			require.NoError(t, err)
@@ -81,10 +81,10 @@ func TestPrefixIteratorMatch1(t *testing.T) {
 }
 
 // Iterator with prefix iterates over everything with same prefix.
-func TestPrefixIteratorMatches1N(t *testing.T) {
+func (s *BackendTestSuite) TestPrefixIteratorMatches1N() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Prefix w/ backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 
 			// prefixed

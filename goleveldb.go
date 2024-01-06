@@ -2,16 +2,27 @@ package db
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"path/filepath"
 
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/errors"
+	leveldbErrors "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func init() {
-	dbCreator := func(name string, dir string) (DB, error) {
+	dbCreator := func(options Options) (DB, error) {
+		name, ok := options.GetString(optionName)
+		if !ok {
+			return nil, errors.Wrap(errMissingOption, optionName)
+		}
+
+		dir, ok := options.GetString(optionDir)
+		if !ok {
+			return nil, errors.Wrap(errMissingOption, optionDir)
+		}
+
 		return NewGoLevelDB(name, dir)
 	}
 	registerDBCreator(GoLevelDBBackend, dbCreator, false)
@@ -46,7 +57,7 @@ func (db *GoLevelDB) Get(key []byte) ([]byte, error) {
 	}
 	res, err := db.db.Get(key, nil)
 	if err != nil {
-		if err == errors.ErrNotFound {
+		if err == leveldbErrors.ErrNotFound {
 			return nil, nil
 		}
 		return nil, err

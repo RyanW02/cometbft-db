@@ -39,7 +39,7 @@ func (s *MongoTestSuite) SetupSuite() {
 
 	s.T().Log("Connected to Docker, starting MongoDB container...")
 
-	client, resource, err := s.setupMongoDb(pool)
+	client, resource, err := setupMongoDb(&s.Suite, pool)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func (s *MongoTestSuite) TearDownTest() {
 	}
 }
 
-func (s *MongoTestSuite) setupMongoDb(pool *dockertest.Pool) (*mongo.Client, *dockertest.Resource, error) {
+func setupMongoDb(s *suite.Suite, pool *dockertest.Pool) (*mongo.Client, *dockertest.Resource, error) {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "mongo",
 		Tag:        "7",
@@ -119,6 +119,20 @@ func (s *MongoTestSuite) setupMongoDb(pool *dockertest.Pool) (*mongo.Client, *do
 
 func (s *MongoTestSuite) TestDatabaseOnline() {
 	assert.NoError(s.T(), s.client.Ping(context.Background(), nil))
+}
+
+func (s *MongoTestSuite) TestDBCreator() {
+	uri := fmt.Sprintf("mongodb://root:password@localhost:%s", s.resource.GetPort("27017/tcp"))
+
+	db, err := mongoDBCreator(Options{
+		"connection_string": uri,
+		"database":          "testing",
+		"collection":        "testing",
+	})
+
+	if assert.NoError(s.T(), err) {
+		assert.NotNil(s.T(), db)
+	}
 }
 
 func (s *MongoTestSuite) TestGetNonExistent() {

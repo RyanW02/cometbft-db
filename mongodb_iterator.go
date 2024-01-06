@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,8 +15,8 @@ type mongoDBIterator struct {
 
 	start, end []byte
 
-	lastErr error
-	item    *record
+	lastErr       error
+	current, next *record
 
 	mu sync.Mutex
 }
@@ -29,15 +30,25 @@ func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoD
 	} else {
 		filterArray := bson.A{}
 		if start != nil {
+			if len(start) == 0 {
+				return nil, errKeyEmpty
+			}
+
 			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$gte", start}}}})
 		}
 
 		if end != nil {
+			if len(end) == 0 {
+				return nil, errKeyEmpty
+			}
+
 			filterArray = append(filterArray, bson.D{{"_id", bson.D{{"$lt", end}}}})
 		}
 
 		filter = bson.D{{"$and", filterArray}}
 	}
+
+	fmt.Println(filter)
 
 	var opts *options.FindOptions
 	if isReverse {
@@ -51,79 +62,105 @@ func newMongoDBIterator(db *MongoDB, start, end []byte, isReverse bool) (*mongoD
 		return nil, err
 	}
 
-	return &mongoDBIterator{
+	it := &mongoDBIterator{
 		db:     db,
 		cursor: cursor,
 		start:  start,
 		end:    end,
-	}, nil
+	}
+
+	// Load current and next records
+	if !cursor.Next(context.Background()) {
+		return it, nil
+	}
+
+	if err := it.cursor.Decode(&it.current); err != nil {
+		return nil, err
+	}
+
+	if !cursor.Next(context.Background()) {
+		return it, nil
+	}
+
+	if err := it.cursor.Decode(&it.next); err != nil {
+		return nil, err
+	}
+
+	return it, nil
 }
 
 // Domain implements Iterator.
-func (itr *mongoDBIterator) Domain() ([]byte, []byte) {
-	itr.mu.Lock()
-	defer itr.mu.Unlock()
+func (it *mongoDBIterator) Domain() ([]byte, []byte) {
+	it.mu.Lock()
+	defer it.mu.Unlock()
 
-	return itr.start, itr.end
+	return it.start, it.end
 }
 
-func (itr *mongoDBIterator) Valid() bool {
-	itr.mu.Lock()
-	defer itr.mu.Unlock()
+func (it *mongoDBIterator) Valid() bool {
+	it.mu.Lock()
+	defer it.mu.Unlock()
 
-	if !itr.cursor.Next(context.Background()) {
-		return false
+	return it.current != nil
+}
+
+func (it *mongoDBIterator) Next() {
+	it.mu.Lock()
+	defer it.mu.Unlock()
+
+	if it.current == nil {
+		panic("invalid iterator: current is nil - call Valid() first")
+	}
+
+	it.current = it.next
+	it.next = nil
+
+	// Load next record
+	if !it.cursor.Next(context.Background()) {
+		return
 	}
 
 	var record record
-	if err := itr.cursor.Decode(&record); err != nil {
-		itr.lastErr = err
-		return false
+	if err := it.cursor.Decode(&record); err != nil {
+		it.lastErr = err
+		return
 	}
 
-	itr.item = &record
-	return true
+	it.next = &record
 }
 
-func (itr *mongoDBIterator) Next() {
-	itr.mu.Lock()
-	defer itr.mu.Unlock()
+func (it *mongoDBIterator) Key() (key []byte) {
+	it.mu.Lock()
+	defer it.mu.Unlock()
 
-	itr.item = nil
-}
-
-func (itr *mongoDBIterator) Key() (key []byte) {
-	itr.mu.Lock()
-	defer itr.mu.Unlock()
-
-	if itr.item == nil {
+	if it.current == nil {
 		panic("invalid iterator: current is nil - call Next() first")
 	}
 
-	return itr.item.Key
+	return it.current.Key
 }
 
-func (itr *mongoDBIterator) Value() (value []byte) {
-	itr.mu.Lock()
-	defer itr.mu.Unlock()
+func (it *mongoDBIterator) Value() (value []byte) {
+	it.mu.Lock()
+	defer it.mu.Unlock()
 
-	if itr.item == nil {
+	if it.current == nil {
 		panic("invalid iterator: current is nil - call Next() first")
 	}
 
-	return itr.item.Value
+	return it.current.Value
 }
 
-func (itr *mongoDBIterator) Error() error {
-	itr.mu.Lock()
-	defer itr.mu.Unlock()
+func (it *mongoDBIterator) Error() error {
+	it.mu.Lock()
+	defer it.mu.Unlock()
 
-	return itr.lastErr
+	return it.lastErr
 }
 
-func (itr *mongoDBIterator) Close() error {
-	itr.mu.Lock()
-	defer itr.mu.Unlock()
+func (it *mongoDBIterator) Close() error {
+	it.mu.Lock()
+	defer it.mu.Unlock()
 
-	return itr.cursor.Close(context.Background())
+	return it.cursor.Close(context.Background())
 }

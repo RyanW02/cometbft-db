@@ -14,7 +14,7 @@ const (
 )
 
 func init() {
-	registerDBCreator(MemDBBackend, func(name, dir string) (DB, error) {
+	registerDBCreator(MemDBBackend, func(options Options) (DB, error) {
 		return NewMemDB(), nil
 	}, false)
 }

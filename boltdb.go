@@ -4,8 +4,8 @@
 package db
 
 import (
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 
@@ -17,7 +17,17 @@ var (
 )
 
 func init() {
-	registerDBCreator(BoltDBBackend, func(name, dir string) (DB, error) {
+	registerDBCreator(BoltDBBackend, func(options Options) (DB, error) {
+		name, ok := options.GetString(optionName)
+		if !ok {
+			return nil, errors.Wrap(errMissingOption, optionName)
+		}
+
+		dir, ok := options.GetString(optionDir)
+		if !ok {
+			return nil, errors.Wrap(errMissingOption, optionDir)
+		}
+
 		return NewBoltDB(name, dir)
 	}, false)
 }

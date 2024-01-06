@@ -5,6 +5,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"path/filepath"
 	"runtime"
 
@@ -12,7 +13,17 @@ import (
 )
 
 func init() {
-	dbCreator := func(name string, dir string) (DB, error) {
+	dbCreator := func(options Options) (DB, error) {
+		name, ok := options.GetString(optionName)
+		if !ok {
+			return nil, errors.Wrap(errMissingOption, optionName)
+		}
+
+		dir, ok := options.GetString(optionDir)
+		if !ok {
+			return nil, errors.Wrap(errMissingOption, optionDir)
+		}
+
 		return NewRocksDB(name, dir)
 	}
 	registerDBCreator(RocksDBBackend, dbCreator, false)

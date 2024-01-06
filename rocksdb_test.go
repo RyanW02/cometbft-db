@@ -15,7 +15,7 @@ import (
 func TestRocksDBBackend(t *testing.T) {
 	name := fmt.Sprintf("test_%x", randStr(12))
 	dir := os.TempDir()
-	db, err := NewDB(name, RocksDBBackend, dir)
+	db, err := NewFlatFileDB(name, RocksDBBackend, dir)
 	require.NoError(t, err)
 	defer cleanupDBDir(dir, name)
 
@@ -26,7 +26,7 @@ func TestRocksDBBackend(t *testing.T) {
 func TestRocksDBStats(t *testing.T) {
 	name := fmt.Sprintf("test_%x", randStr(12))
 	dir := os.TempDir()
-	db, err := NewDB(name, RocksDBBackend, dir)
+	db, err := NewFlatFileDB(name, RocksDBBackend, dir)
 	require.NoError(t, err)
 	defer cleanupDBDir(dir, name)
 

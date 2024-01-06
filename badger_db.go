@@ -6,6 +6,7 @@ package db
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 
@@ -14,8 +15,18 @@ import (
 
 func init() { registerDBCreator(BadgerDBBackend, badgerDBCreator, true) }
 
-func badgerDBCreator(dbName, dir string) (DB, error) {
-	return NewBadgerDB(dbName, dir)
+func badgerDBCreator(options Options) (DB, error) {
+	name, ok := options.GetString(optionName)
+	if !ok {
+		return nil, errors.Wrap(errMissingOption, optionName)
+	}
+
+	dir, ok := options.GetString(optionDir)
+	if !ok {
+		return nil, errors.Wrap(errMissingOption, optionDir)
+	}
+
+	return NewBadgerDB(name, dir)
 }
 
 // NewBadgerDB creates a Badger key-value store backed to the

@@ -66,10 +66,10 @@ func checkValuePanics(t *testing.T, itr Iterator) {
 	assert.Panics(t, func() { itr.Value() })
 }
 
-func newTempDB(t *testing.T, backend BackendType) (db DB, dbDir string) {
+func (s *BackendTestSuite) newTempDB(t *testing.T, backend BackendType) (db DB, dbDir string) {
 	dirname, err := os.MkdirTemp("", "db_common_test")
 	require.NoError(t, err)
-	db, err = NewDB("testdb", backend, dirname)
+	db, err = NewDB(backend, s.defaultOptions(backend, "testdb", dirname))
 	require.NoError(t, err)
 	return db, dirname
 }

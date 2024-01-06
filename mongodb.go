@@ -6,8 +6,46 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	mongoOptions "go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func init() { registerDBCreator(MongoDBBackend, mongoDBCreator, true) }
+
+func mongoDBCreator(options Options) (DB, error) {
+	connString, ok := options.GetString("connection_string")
+	if !ok {
+		return nil, errors.New("connection_string not provided in options")
+	}
+
+	databaseName, ok := options.GetString("database")
+	if !ok {
+		return nil, errors.New("database not provided in options")
+	}
+
+	collectionName, ok := options.GetString("collection")
+	if !ok {
+		return nil, errors.New("collection not provided in options")
+	}
+
+	serverAPI := mongoOptions.ServerAPI(mongoOptions.ServerAPIVersion1)
+	opts := mongoOptions.Client().ApplyURI(connString).SetServerAPIOptions(serverAPI)
+
+	client, err := mongo.Connect(context.Background(), opts)
+	if err != nil {
+		return nil, err
+	}
+
+	collection := client.Database(databaseName).Collection(collectionName)
+	return NewMongoDB(collection), nil
+}
+
+func NewMongoDBOptions(connectionString, database, collection string) Options {
+	return Options{
+		"connection_string": connectionString,
+		"database":          database,
+		"collection":        collection,
+	}
+}
 
 type MongoDB struct {
 	collection *mongo.Collection
@@ -91,7 +129,7 @@ func (db *MongoDB) Set(key, value []byte) error {
 		context.Background(),
 		bson.D{{"_id", key}},
 		bson.D{{"$set", newRecord(key, value)}},
-		&options.UpdateOptions{Upsert: ptr(true)},
+		&mongoOptions.UpdateOptions{Upsert: ptr(true)},
 	)
 	return err
 }

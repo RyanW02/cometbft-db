@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDBIteratorSingleKey(t *testing.T) {
+func (s *BackendTestSuite) TestDBIteratorSingleKey() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 
 			err := db.SetSync(bz("1"), bz("value_1"))
@@ -30,10 +30,10 @@ func TestDBIteratorSingleKey(t *testing.T) {
 	}
 }
 
-func TestDBIteratorTwoKeys(t *testing.T) {
+func (s *BackendTestSuite) TestDBIteratorTwoKeys() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 
 			err := db.SetSync(bz("1"), bz("value_1"))
@@ -62,10 +62,10 @@ func TestDBIteratorTwoKeys(t *testing.T) {
 	}
 }
 
-func TestDBIteratorMany(t *testing.T) {
+func (s *BackendTestSuite) TestDBIteratorMany() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 
 			keys := make([][]byte, 100)
@@ -94,10 +94,10 @@ func TestDBIteratorMany(t *testing.T) {
 	}
 }
 
-func TestDBIteratorEmpty(t *testing.T) {
+func (s *BackendTestSuite) TestDBIteratorEmpty() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 
 			itr, err := db.Iterator(nil, nil)
@@ -108,10 +108,10 @@ func TestDBIteratorEmpty(t *testing.T) {
 	}
 }
 
-func TestDBIteratorEmptyBeginAfter(t *testing.T) {
+func (s *BackendTestSuite) TestDBIteratorEmptyBeginAfter() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 
 			itr, err := db.Iterator(bz("1"), nil)
@@ -122,10 +122,10 @@ func TestDBIteratorEmptyBeginAfter(t *testing.T) {
 	}
 }
 
-func TestDBIteratorNonemptyBeginAfter(t *testing.T) {
+func (s *BackendTestSuite) TestDBIteratorNonemptyBeginAfter() {
 	for backend := range backends {
-		t.Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
-			db, dir := newTempDB(t, backend)
+		s.T().Run(fmt.Sprintf("Backend %s", backend), func(t *testing.T) {
+			db, dir := s.newTempDB(t, backend)
 			defer os.RemoveAll(dir)
 
 			err := db.SetSync(bz("1"), bz("value_1"))

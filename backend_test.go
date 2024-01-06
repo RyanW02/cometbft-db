@@ -1,9 +1,15 @@
 package db
 
 import (
+	"context"
 	"fmt"
+	"github.com/ory/dockertest/v3"
+	"github.com/stretchr/testify/suite"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +19,7 @@ import (
 // Register a test backend for PrefixDB as well, with some unrelated junk data
 func init() {
 	//nolint: errcheck
-	registerDBCreator("prefixdb", func(name, dir string) (DB, error) {
+	registerDBCreator("prefixdb", func(Options) (DB, error) {
 		mdb := NewMemDB()
 		mdb.Set([]byte("a"), []byte{1})
 		mdb.Set([]byte("b"), []byte{2})
@@ -32,11 +38,102 @@ func cleanupDBDir(dir, name string) {
 	}
 }
 
-func testBackendGetSetDelete(t *testing.T, backend BackendType) {
+type BackendTestSuite struct {
+	suite.Suite
+
+	pool          *dockertest.Pool
+	resources     []*dockertest.Resource
+	customOptions map[BackendType]Options
+
+	mongoClient     *mongo.Client
+	mongoCollection *mongo.Collection
+	mongoConnString string
+}
+
+func TestBackendSuite(t *testing.T) {
+	suite.Run(t, new(BackendTestSuite))
+}
+
+func (s *BackendTestSuite) SetupSuite() {
+	s.customOptions = make(map[BackendType]Options)
+
+	s.T().Log("Connecting to Docker...")
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		panic(err)
+	}
+
+	s.pool = pool
+
+	if err := pool.Client.Ping(); err != nil {
+		panic(err)
+	}
+
+	s.T().Log("Connected to Docker, starting MongoDB container...")
+
+	mongoClient, mongoResource, err := setupMongoDb(&s.Suite, pool)
+	if err != nil {
+		panic(err)
+	}
+
+	s.mongoCollection = mongoClient.Database("testing").Collection("testing")
+	if _, err := s.mongoCollection.DeleteMany(context.Background(), bson.D{}); err != nil {
+		panic(err)
+	}
+
+	s.mongoClient = mongoClient
+	s.mongoConnString = fmt.Sprintf("mongodb://root:password@localhost:%s", mongoResource.GetPort("27017/tcp"))
+	s.resources = append(s.resources, mongoResource)
+	s.customOptions[MongoDBBackend] = Options{
+		"connection_string": fmt.Sprintf("mongodb://root:password@localhost:%s", mongoResource.GetPort("27017/tcp")),
+		"database":          "testing",
+		"collection":        "testing",
+	}
+}
+
+func (s *BackendTestSuite) TearDownSuite() {
+	if err := s.mongoClient.Disconnect(context.Background()); err != nil {
+		panic(err)
+	}
+
+	for _, resource := range s.resources {
+		if err := s.pool.Purge(resource); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (s *BackendTestSuite) TearDownTest() {
+	_, err := s.mongoCollection.DeleteMany(context.Background(), bson.D{})
+	if err != nil {
+		panic(err)
+	}
+}
+
+// name and dir are only used if the backend is a flat-file backend.
+func (s *BackendTestSuite) defaultOptions(backend BackendType, name, dir string) Options {
+	switch backend {
+	case MongoDBBackend:
+		split := strings.Split(dir, "/")
+		dirName := split[len(split)-1]
+		return Options{
+			"connection_string": s.mongoConnString,
+			"database":          dirName,
+			"collection":        name,
+		}
+	default:
+		return Options{
+			optionName: name,
+			optionDir:  dir,
+		}
+	}
+}
+
+func (s *BackendTestSuite) testBackendGetSetDelete(t *testing.T, backend BackendType) {
 	// Default
 	dirname, err := os.MkdirTemp("", fmt.Sprintf("test_backend_%s_", backend))
 	require.Nil(t, err)
-	db, err := NewDB("testdb", backend, dirname)
+	db, err := NewDB(backend, s.defaultOptions(backend, "testdb", dirname))
 	require.NoError(t, err)
 	defer cleanupDBDir(dirname, "testdb")
 
@@ -134,36 +231,36 @@ func testBackendGetSetDelete(t *testing.T, backend BackendType) {
 	require.Equal(t, []byte{}, value)
 }
 
-func TestBackendsGetSetDelete(t *testing.T) {
+func (s *BackendTestSuite) TestBackendsGetSetDelete() {
 	for dbType := range backends {
-		t.Run(string(dbType), func(t *testing.T) {
-			testBackendGetSetDelete(t, dbType)
+		s.T().Run(string(dbType), func(t *testing.T) {
+			s.testBackendGetSetDelete(t, dbType)
 		})
 	}
 }
 
-func TestGoLevelDBBackend(t *testing.T) {
+func (s *BackendTestSuite) TestGoLevelDBBackend() {
 	name := fmt.Sprintf("test_%x", randStr(12))
-	db, err := NewDB(name, GoLevelDBBackend, "")
-	require.NoError(t, err)
+	db, err := NewFlatFileDB(name, GoLevelDBBackend, "")
+	require.NoError(s.T(), err)
 	defer cleanupDBDir("", name)
 
 	_, ok := db.(*GoLevelDB)
-	assert.True(t, ok)
+	assert.True(s.T(), ok)
 }
 
-func TestDBIterator(t *testing.T) {
+func (s *BackendTestSuite) TestDBIterator() {
 	for dbType := range backends {
-		t.Run(string(dbType), func(t *testing.T) {
-			testDBIterator(t, dbType)
+		s.T().Run(string(dbType), func(t *testing.T) {
+			s.testDBIterator(t, dbType)
 		})
 	}
 }
 
-func testDBIterator(t *testing.T, backend BackendType) {
+func (s *BackendTestSuite) testDBIterator(t *testing.T, backend BackendType) {
 	name := fmt.Sprintf("test_%x", randStr(12))
 	dir := os.TempDir()
-	db, err := NewDB(name, backend, dir)
+	db, err := NewDB(backend, s.defaultOptions(backend, name, dir))
 	require.NoError(t, err)
 	defer cleanupDBDir(dir, name)
 
@@ -303,7 +400,7 @@ func testDBIterator(t *testing.T, backend BackendType) {
 	// Ensure that the iterators don't panic with an empty database.
 	dir2, err := os.MkdirTemp("", "tm-db-test")
 	require.NoError(t, err)
-	db2, err := NewDB(name, backend, dir2)
+	db2, err := NewDB(backend, s.defaultOptions(backend, name, dir2))
 	require.NoError(t, err)
 	defer cleanupDBDir(dir2, name)
 
@@ -326,18 +423,18 @@ func verifyIterator(t *testing.T, itr Iterator, expected []int64, msg string) {
 	assert.Equal(t, expected, list, msg)
 }
 
-func TestDBBatch(t *testing.T) {
+func (s *BackendTestSuite) TestDBBatch() {
 	for dbType := range backends {
-		t.Run(fmt.Sprintf("%v", dbType), func(t *testing.T) {
-			testDBBatch(t, dbType)
+		s.T().Run(fmt.Sprintf("%v", dbType), func(t *testing.T) {
+			s.testDBBatch(t, dbType)
 		})
 	}
 }
 
-func testDBBatch(t *testing.T, backend BackendType) {
+func (s *BackendTestSuite) testDBBatch(t *testing.T, backend BackendType) {
 	name := fmt.Sprintf("test_%x", randStr(12))
 	dir := os.TempDir()
-	db, err := NewDB(name, backend, dir)
+	db, err := NewDB(backend, s.defaultOptions(backend, name, dir))
 	require.NoError(t, err)
 	defer cleanupDBDir(dir, name)
 
