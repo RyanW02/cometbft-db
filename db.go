@@ -35,6 +35,10 @@ const (
 	RocksDBBackend BackendType = "rocksdb"
 
 	BadgerDBBackend BackendType = "badgerdb"
+
+	// MongoDBBackend represents a remote (i.e. not connected via a network
+	// or unix socket) MongoDB server.
+	MongoDBBackend BackendType = "mongodb"
 )
 
 type dbCreator func(name string, dir string) (DB, error)
