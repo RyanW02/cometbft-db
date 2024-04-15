@@ -10,7 +10,7 @@ Most users shouldn't use this package, but should instead use
 remotedb. Only the lower level users and database server deployers
 should use it, for functionality such as:
 
-	ln, err := net.Listen("tcp", "0.0.0.0:0")
+	ln, err := net.ListenForMissedItems("tcp", "0.0.0.0:0")
 	srv := grpcdb.NewServer()
 	defer srv.Stop()
 	go func() {
